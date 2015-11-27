@@ -1,6 +1,7 @@
 class Process(object):
     def __init__(self, pid, arrivingTime, nPeaks = 0, peaks = [], timeWaiting = 0, 
-                 endTime = 0, processingTime = 0, waitingTime = 0, turnAround = 0, arrivedTime = 0, done = False):
+                 endTime = 0, processingTime = 0, timeInReady = 0, turnAround = 0, 
+                 arrivedTime = 0, timeDoing = 0, done = False, peak = 0):
         super(Process, self).__init__()
         self.pid = pid
         self.arrivingTime = arrivingTime
@@ -9,11 +10,23 @@ class Process(object):
         self.timeWaiting = timeWaiting
         self.endTime = endTime
         self.processingTime = processingTime
-        self.waitingTime = waitingTime
+        self.timeInReady = timeInReady
         self.turnAround = turnAround
         self.arrivedTime = arrivedTime
+        self.timeDoing = timeDoing
         self.done = done
-        
+        self.peak = peak
+    
+    def printP(self):
+        print("no peaks - pid:",self.pid,"arrivingTime:",self.arrivingTime,"nPeaks:",self.nPeaks,
+              'peaks:', self.peak , '/' , self.peaks, "processingTime:", self.processingTime,
+              "timeInReady:", self.timeInReady)
+
+def getKey(process):
+    return process.peaks[0]
+
+
+
 def importData():
     try:
         with open("especificacoes/processos.dat", "r") as openFile:
@@ -39,9 +52,9 @@ def exportData(algorithm, list1, list2, list3):
             log1.write("%s \n" %algorithm)
             log1.write("ID Tempo_de_Chegada Tempo_de_finalizacao Tempo_de_Processamento Tempo_de_Espera Tempo_de_Turnaround \n")
             for process in list1:
-                log1.write("%s %s %s %s %s %s \n" %(process.pid, process.arrivingTime, process.endTime, process.processingTime, process.waitingTime, process.turnAround))
+                log1.write("%s %s %s %s %s %s \n" %(process.pid, process.arrivingTime, process.endTime, process.processingTime, process.timeInReady, process.turnAround))
                 mediumTime[0] += process.processingTime
-                mediumTime[1] += process.waitingTime
+                mediumTime[1] += process.timeInReady
                 mediumTime[2] += process.turnAround
             for i in range(len(mediumTime)):
                 mediumTime[i] /= len(list1)
@@ -65,11 +78,10 @@ def exportData(algorithm, list1, list2, list3):
     except IOError:
         print("IOError: could not write log2")
 
-
-if __name__ == '__main__':
+def fcfsOld():
     processes = importData()
     # for process in processes:
-        # print("pid:",process.pid,"arrivingTime:",process.arrivingTime,"nPeaks:",process.nPeaks, "peaks:", process.peaks, "processingTime:", process.processingTime, "waitingTime:", process.waitingTime)
+        # print("pid:",process.pid,"arrivingTime:",process.arrivingTime,"nPeaks:",process.nPeaks, "peaks:", process.peaks, "processingTime:", process.processingTime, "timeInReady:", process.timeInReady)
     # print("================================================================")
     algorithm = "FCFS"
     count = 0
@@ -86,23 +98,24 @@ if __name__ == '__main__':
             ready.append(processes.pop(0))
         if ready and not doing:
             doing.append(ready.pop(0))
-            if not doing[0].done:
-                doing[0].waitingTime = count - doing[0].arrivedTime
-                doing[0].done = True
+            # if not doing[0].done:
+            #     doing[0].timeInReady = count - doing[0].arrivedTime
+            #     doing[0].done = True
         if doing:
             # print(doing[0].pid, " ", doing[0].processingTime)
+            busy += 1
             if doing[0].peaks[0] == 0:
                 doing[0].peaks.pop(0)
                 if not doing[0].peaks:
                     doing[0].endTime = count
                     # print("no peaks - pid:",doing[0].pid,"arrivingTime:",doing[0].arrivingTime,"nPeaks:",doing[0].nPeaks, 
-                    #       "peaks:", doing[0].peaks, "processingTime:", doing[0].processingTime, "count:", count, "waitingTime:", process.waitingTime)
+                    #       "peaks:", doing[0].peaks, "processingTime:", doing[0].processingTime, "count:", count, "timeInReady:", process.timeInReady)
                     doing[0].turnAround = count - doing[0].arrivedTime
                     finished.append(doing.pop(0))
                 else:
                     doing[0].timeWaiting = 10
                     # print("no peaks - pid:",doing[0].pid,"arrivingTime:",doing[0].arrivingTime,"nPeaks:",doing[0].nPeaks, 
-                    #       "peaks:", doing[0].peaks, "processingTime:", doing[0].processingTime, "count:", count, "waitingTime:", process.waitingTime)
+                    #       "peaks:", doing[0].peaks, "processingTime:", doing[0].processingTime, "count:", count, "timeInReady:", process.timeInReady)
                     waiting.append(doing.pop(0))
             else:
                 doing[0].peaks[0] -= 1
@@ -111,10 +124,11 @@ if __name__ == '__main__':
         if waiting:
             for next in waiting:
                 next.processingTime += 1
-                next.timeWaiting -= 1
-                if next.timeWaiting == 0:
-                    ready.append(next)
-                    waiting.remove(next)
+            if waiting[0].timeWaiting == 0:
+                ready.append(waiting[0])
+                waiting.remove(waiting[0])
+            if waiting:
+                waiting[0].timeWaiting -= 1
 
         if count % 200 == 0:
             log2['count'].append(count)
@@ -122,10 +136,12 @@ if __name__ == '__main__':
             log2['waiting'].append(len(waiting))
             log2['finished'].append(len(finished))
 
+        if ready:
+            for next in ready:
+                next.timeInReady += 1
+
         count += 1
 
-        if doing:
-            busy += 1
             # print(ready[0].pid)
             # ready.pop(0)
         # process = processes.pop()
@@ -134,10 +150,213 @@ if __name__ == '__main__':
     #     print(f.pid, " ", f.processingTime)
 
     # for process in finished:
-    #     print("pid:",process.pid,"arrivingTime:",process.arrivingTime,"nPeaks:",process.nPeaks, "peaks:", process.peaks, "processingTime:", process.processingTime, "waitingTime:", process.waitingTime)
+    #     print("pid:",process.pid,"arrivingTime:",process.arrivingTime,"nPeaks:",process.nPeaks, "peaks:", process.peaks, "processingTime:", process.processingTime, "timeInReady:", process.timeInReady)
 
     # print("count:", count)
 
     log3 = {'total' : count, 'busy' : busy}
 
     exportData(algorithm, finished, log2, log3)
+
+
+def fcfs():
+    IO_TIME = 10
+    processes = importData()
+    algorithm = "FCFS"
+    count = 0
+    busy = 0
+    READYSIZE = 10
+    log2 = {'count':[], 'ready':[], 'waiting':[], 'finished':[]}
+    ready = []
+    waiting = []
+    doing = []
+    finished = []
+    while processes or ready or waiting or doing:
+
+        while len(ready)+len(waiting)+len(doing) < READYSIZE and processes and processes[0].arrivingTime <= count:
+            processes[0].arrivedTime = count
+            ready.append(processes.pop(0))
+
+        count += 1
+
+        if ready:
+            if not doing:
+                doing.append(ready.pop(0))
+            for next in ready:
+                next.timeInReady += 1
+
+        if doing:
+            busy += 1
+            doing[0].processingTime += 1
+            doing[0].peak += 1
+
+            if not doing[0].peak < doing[0].peaks[0]:
+                doing[0].printP()
+
+                doing[0].peaks.pop(0)
+                doing[0].peak = 0
+                if not doing[0].peaks:
+                    doing[0].endTime = count
+                    doing[0].turnAround = count - doing[0].arrivedTime
+                    finished.append(doing.pop(0))
+                else:
+                    doing[0].timeWaiting = -1
+                    waiting.append(doing.pop(0))
+
+        if waiting:
+            for next in waiting:
+                if not next.timeWaiting < 0:
+                    next.processingTime += 1
+            waiting[0].timeWaiting += 1
+            if not waiting[0].timeWaiting < IO_TIME:
+                ready.append(waiting.pop(0))
+
+        if count % 200 == 0:
+            log2['count'].append(count)
+            log2['ready'].append(len(ready))
+            log2['waiting'].append(len(waiting))
+            log2['finished'].append(len(finished))
+
+
+    log3 = {'total' : count, 'busy' : busy}
+
+    exportData(algorithm, finished, log2, log3)
+
+def sjf():
+    IO_TIME = 10
+    processes = importData()
+    algorithm = "SJF"
+    count = 0
+    busy = 0
+    READYSIZE = 10
+    log2 = {'count':[], 'ready':[], 'waiting':[], 'finished':[]}
+    ready = []
+    waiting = []
+    doing = []
+    finished = []
+    while processes or ready or waiting or doing:
+
+        while len(ready)+len(waiting)+len(doing) < READYSIZE and processes and processes[0].arrivingTime <= count:
+            processes[0].arrivedTime = count
+            ready.append(processes.pop(0))
+
+        count += 1
+
+        if ready:
+            ready = sorted(ready, key=getKey)
+            if not doing:
+                doing.append(ready.pop(0))
+            for next in ready:
+                next.timeInReady += 1
+
+        if doing:
+            busy += 1
+            doing[0].processingTime += 1
+            doing[0].peak += 1
+
+            if not doing[0].peak < doing[0].peaks[0]:
+                doing[0].printP()
+
+                doing[0].peaks.pop(0)
+                doing[0].peak = 0
+                if not doing[0].peaks:
+                    doing[0].endTime = count
+                    doing[0].turnAround = count - doing[0].arrivedTime
+                    finished.append(doing.pop(0))
+                else:
+                    doing[0].timeWaiting = -1
+                    waiting.append(doing.pop(0))
+
+        if waiting:
+            for next in waiting:
+                if not next.timeWaiting < 0:
+                    next.processingTime += 1
+            waiting[0].timeWaiting += 1
+            if not waiting[0].timeWaiting < IO_TIME:
+                ready.append(waiting.pop(0))
+
+        if count % 200 == 0:
+            log2['count'].append(count)
+            log2['ready'].append(len(ready))
+            log2['waiting'].append(len(waiting))
+            log2['finished'].append(len(finished))
+
+
+    log3 = {'total' : count, 'busy' : busy}
+
+    exportData(algorithm, finished, log2, log3)
+
+def roundRobin():
+    IO_TIME = 10
+    ROUND_TIME = 20
+    processes = importData()
+    algorithm = "Round_Robin"
+    count = 0
+    busy = 0
+    READYSIZE = 10
+    log2 = {'count':[], 'ready':[], 'waiting':[], 'finished':[]}
+    ready = []
+    waiting = []
+    doing = []
+    finished = []
+    while processes or ready or waiting or doing:
+
+        while len(ready)+len(waiting)+len(doing) < READYSIZE and processes and processes[0].arrivingTime <= count:
+            processes[0].arrivedTime = count
+            ready.append(processes.pop(0))
+
+        count += 1
+
+        if ready:
+            if not doing:
+                doing.append(ready.pop(0))
+            for next in ready:
+                next.timeInReady += 1
+
+        if doing:
+            busy += 1
+            doing[0].processingTime += 1
+            doing[0].peak += 1
+            doing[0].timeDoing += 1
+
+            if not doing[0].peak < doing[0].peaks[0]:
+                doing[0].printP()
+
+                doing[0].peaks.pop(0)
+                doing[0].peak = 0
+                if not doing[0].peaks:
+                    doing[0].endTime = count
+                    doing[0].turnAround = count - doing[0].arrivedTime
+                    finished.append(doing.pop(0))
+                else:
+                    doing[0].timeWaiting = -1
+                    waiting.append(doing.pop(0))
+            else:
+                if not doing[0].timeDoing < ROUND_TIME:
+                    doing[0].printP()
+
+                    doing[0].timeDoing = 0
+                    ready.append(doing.pop(0))
+
+        if waiting:
+            for next in waiting:
+                if not next.timeWaiting < 0:
+                    next.processingTime += 1
+            waiting[0].timeWaiting += 1
+            if not waiting[0].timeWaiting < IO_TIME:
+                ready.append(waiting.pop(0))
+
+        if count % 200 == 0:
+            log2['count'].append(count)
+            log2['ready'].append(len(ready))
+            log2['waiting'].append(len(waiting))
+            log2['finished'].append(len(finished))
+
+    log3 = {'total' : count, 'busy' : busy}
+
+    exportData(algorithm, finished, log2, log3)
+
+if __name__ == '__main__':
+    # fcfs()
+    sjf()
+    # roundRobin()
