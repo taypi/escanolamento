@@ -25,8 +25,6 @@ class Process(object):
 def getKey(process):
     return process.peaks[0]
 
-
-
 def importData():
     try:
         with open("especificacoes/processos.dat", "r") as openFile:
@@ -48,7 +46,7 @@ def importData():
 def exportData(algorithm, list1, list2, list3):
     mediumTime = [0, 0, 0]
     try:
-        with open("resultados/log1.dat","w") as log1:
+        with open("resultados/log1" + str(algorithm) + ".dat","w") as log1:
             log1.write("%s \n" %algorithm)
             log1.write("ID Tempo_de_Chegada Tempo_de_finalizacao Tempo_de_Processamento Tempo_de_Espera Tempo_de_Turnaround \n")
             for process in list1:
@@ -62,7 +60,7 @@ def exportData(algorithm, list1, list2, list3):
         print("IOError: could not write log1")
 
     try:
-        with open("resultados/log2.dat","w") as log2:
+        with open("resultados/log2" + str(algorithm) + ".dat","w") as log2:
             log2.write("%s \n" %algorithm)
             log2.write("Tempo Processos_Fila_Pronto Processos_Fila_Bloqueado Processos_Finalizados \n")
             for i in range(len(list2['count'])):
@@ -71,7 +69,7 @@ def exportData(algorithm, list1, list2, list3):
         print("IOError: could not write log2")
 
     try:
-        with open("resultados/log3.dat","w") as log3:
+        with open("resultados/log3" + str(algorithm) + ".dat","w") as log3:
             log3.write("%s \n" %algorithm)
             log3.write("Valor_Atual_do_Ciclo Tempo_Medio_Processamento Tempo_Medio_Espera Tempo_Medio_Turnaround Tempo_CPU_Ocupada Taxa_Ocupacao Tempo_CPU_Ociosa Taxa_Ociosidade \n")
             log3.write("%s %s %s %s %s %s %s %s \n" %(list3['total'], mediumTime[0], mediumTime[1], mediumTime[2], list3['busy'], list3['busy']/list3['total'], list3['total']-list3['busy'], (list3['total']-list3['busy'])/list3['total']))
@@ -191,7 +189,7 @@ def fcfs():
             doing[0].peak += 1
 
             if not doing[0].peak < doing[0].peaks[0]:
-                doing[0].printP()
+                # doing[0].printP()
 
                 doing[0].peaks.pop(0)
                 doing[0].peak = 0
@@ -255,7 +253,7 @@ def sjf():
             doing[0].peak += 1
 
             if not doing[0].peak < doing[0].peaks[0]:
-                doing[0].printP()
+                # doing[0].printP()
 
                 doing[0].peaks.pop(0)
                 doing[0].peak = 0
@@ -290,7 +288,7 @@ def roundRobin():
     IO_TIME = 10
     ROUND_TIME = 20
     processes = importData()
-    algorithm = "Round_Robin"
+    algorithm = "RR"
     count = 0
     busy = 0
     READYSIZE = 10
@@ -320,7 +318,7 @@ def roundRobin():
             doing[0].timeDoing += 1
 
             if not doing[0].peak < doing[0].peaks[0]:
-                doing[0].printP()
+                # doing[0].printP()
 
                 doing[0].peaks.pop(0)
                 doing[0].peak = 0
@@ -333,7 +331,7 @@ def roundRobin():
                     waiting.append(doing.pop(0))
             else:
                 if not doing[0].timeDoing < ROUND_TIME:
-                    doing[0].printP()
+                    # doing[0].printP()
 
                     doing[0].timeDoing = 0
                     ready.append(doing.pop(0))
@@ -357,6 +355,6 @@ def roundRobin():
     exportData(algorithm, finished, log2, log3)
 
 if __name__ == '__main__':
-    # fcfs()
+    fcfs()
     sjf()
-    # roundRobin()
+    roundRobin()
